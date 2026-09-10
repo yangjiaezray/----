@@ -10,10 +10,13 @@
   <meta property="og:description" content="广东工业大学 | 集成电路设计。热爱音乐、阅读、创作与探索。" />
   <meta property="og:type" content="website" />
   <meta property="og:image" content="avatar.jpg" />
+  <link rel="icon" type="image/jpeg" href="avatar.jpg" />
+  <link rel="apple-touch-icon" href="avatar.jpg" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="scroll-progress" id="scrollProgress"></div>
   <header>
     <div class="container">
       <nav aria-label="主导航">
@@ -120,25 +123,25 @@
             <div class="interest-icon">🎵</div>
             <h3>音乐</h3>
             <p>歌单里几乎只有英文、日语、西班牙语或德语的歌曲喲！同时作为一名小提琴手，纯音乐和古典也是必不可少的修炼！</p>
-            <img src="images/photo1.jpg" alt="音乐相关" class="interest-photo" />
+            <img src="images/photo1.jpg" alt="音乐相关" class="interest-photo" loading="lazy" />
           </div>
           <div class="interest-card">
             <div class="interest-icon">📚</div>
             <h3>阅读</h3>
             <p>《a sudden light》《蜜蜂与远雷》《滕王阁序》还有蔡皋奶奶的散文集都是我的top榜。不过当然，科幻或者网络文学我也略知一二awa</p>
-            <img src="images/photo2.jpg" alt="阅读相关" class="interest-photo" />
+            <img src="images/photo2.jpg" alt="阅读相关" class="interest-photo" loading="lazy" />
           </div>
           <div class="interest-card">
             <div class="interest-icon">🔧</div>
             <h3>动手制作</h3>
             <p>从版图设计到电路焊接，（什么你要玩生电？）享受把想法变成实物的成就感。</p>
-            <img src="images/photo3.png" alt="动手制作" class="interest-photo" />
+            <img src="images/photo3.png" alt="动手制作" class="interest-photo" loading="lazy" />
           </div>
           <div class="interest-card">
             <div class="interest-icon">🏕️</div>
             <h3>户外探索</h3>
             <p>走出房间，感受自然。徒步、骑行、探索城市角落，都是我的生活（photographing）方式。</p>
-            <img src="images/photo4.jpg" alt="户外探索" class="interest-photo" />
+            <img src="images/photo4.jpg" alt="户外探索" class="interest-photo" loading="lazy" />
           </div>
         </div>
       </section>
@@ -146,7 +149,6 @@
       <!-- Now -->
       <section id="now" aria-labelledby="now-title">
         <h2 id="now-title">此刻 · Now</h2>
-        <p class="section-desc">Inspired by <a href="https://nownownow.com/about" target="_blank" rel="noopener">the /now page movement</a> — 一个关于「我现在在做什么」的页面。</p>
         <div class="now-grid">
           <div class="now-item">
             <span class="now-label">📍 坐标</span>
@@ -198,7 +200,7 @@
             <span class="goal-number">03</span>
             <div>
               <h3>保持热情</h3>
-              <p>这是最重要的命题之一。无论走多远，都请不要忘记最初出发的理由</p>
+              <p>这是最重要的命题之一——无论走多远，都请不要忘记最初出发的理由</p>
             </div>
           </div>
         </div>
@@ -229,6 +231,7 @@
           </label>
           <button type="submit">发送留言</button>
         </form>
+        <p class="form-hint">💡 留言功能需要配置 Formspree。前往 <a href="https://formspree.io" target="_blank" rel="noopener">formspree.io</a> 注册后将表单 ID 替换 <code>your-id</code> 即可。</p>
       </section>
 
     </div>
@@ -236,7 +239,7 @@
 
   <footer>
     <div class="container">
-      <div class="mc-creeper" aria-label="Minecraft Creeper"></div>
+      <img src="avatar.jpg" alt="头像" class="footer-avatar" />
       <div class="footer-pixel-deco"></div>
       <p>© 2026 郭佳扬阳 · Ezray Guo · <a href="mailto:guojiayangyang@mails.gdut.edu.cn">联系我</a></p>
       <p class="footer-quote">"Stay focused, keep learning and trust the process — time rewards those who build with patience." — Morris Chang</p>
@@ -244,7 +247,7 @@
     </div>
   </footer>
 
-  <button class="back-to-top" id="backToTop" aria-label="回到顶部">↑</button>
+  <button class="back-to-top" id="backToTop" aria-label="回到顶部" title="回到顶部">↑</button>
 
   <script type="application/ld+json">
   {
