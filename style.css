@@ -1,20 +1,26 @@
 /*
  style.css
- 欧美文艺简约风 — European/American Literary Minimalist
- - Warm neutral palette, editorial typography
- - Generous whitespace, delicate borders
- - Subtle scroll animations via JS
+ 欧美文艺简约风 × 像素装饰
+ European Literary Minimalist × Pixel Art Accents
+ ─ Warm neutral palette, editorial typography, delicate borders
+ ─ Subtle MC-inspired pixel elements, geometric line work
 */
 
 :root {
-  --bg: #f9f6f0;           /* warm cream */
-  --card: #fdfbf7;         /* slightly warmer card */
-  --text: #2c2416;         /* deep warm brown-black */
-  --muted: #8c7b6b;        /* warm taupe */
-  --muted-light: #bfb3a4;  /* lighter warm gray */
-  --accent: #b5838d;       /* dusty rose */
-  --accent-2: #9a8c7a;     /* warm sand */
-  --border: #e6ddd0;       /* thin warm border */
+  --bg: #f9f6f0;
+  --card: #fdfbf7;
+  --text: #2c2416;
+  --muted: #8c7b6b;
+  --muted-light: #bfb3a4;
+  --accent: #b5838d;
+  --accent-deep: #9b6b75;
+  --accent-2: #9a8c7a;
+  --accent-3: #7a9a8a;
+  --accent-4: #c4a882;
+  --mc-green: #5d8a3c;
+  --mc-brown: #8b6b4a;
+  --mc-gold: #c4a040;
+  --border: #e6ddd0;
   --radius: 6px;
   --max-width: 880px;
   --transition: 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -35,8 +41,9 @@ body {
   color: var(--text);
   background: var(--bg);
   background-image:
-    radial-gradient(ellipse at 20% 0%, rgba(181, 131, 141, 0.04) 0%, transparent 60%),
-    radial-gradient(ellipse at 80% 100%, rgba(154, 140, 122, 0.04) 0%, transparent 60%);
+    radial-gradient(ellipse at 20% 0%, rgba(181, 131, 141, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 60%, rgba(122, 154, 138, 0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(196, 168, 130, 0.04) 0%, transparent 60%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.75;
@@ -53,7 +60,7 @@ a {
 }
 
 a:hover {
-  color: #9b6b75;
+  color: var(--accent-deep);
 }
 
 /* ── Layout ── */
@@ -130,6 +137,7 @@ nav {
 /* ── Hero ── */
 .hero {
   padding: 72px 0 60px;
+  position: relative;
 }
 
 .hero-inner {
@@ -143,9 +151,17 @@ nav {
   height: 130px;
   border-radius: 9999px;
   object-fit: cover;
-  border: 2px solid var(--border);
+  border: 3px solid transparent;
+  background: linear-gradient(var(--bg), var(--bg)) padding-box,
+              linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent-4)) border-box;
   box-shadow: 0 2px 20px rgba(44, 36, 22, 0.04);
   flex-shrink: 0;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.avatar:hover {
+  transform: scale(1.03);
+  box-shadow: 0 8px 32px rgba(44, 36, 22, 0.1);
 }
 
 .intro h1 {
@@ -156,6 +172,10 @@ nav {
   letter-spacing: 0.04em;
   line-height: 1.2;
   color: var(--text);
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent-deep) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .subtitle {
@@ -172,6 +192,7 @@ nav {
   font-size: 15px;
   font-style: italic;
   font-family: "Merriweather", "Georgia", serif;
+  line-height: 1.6;
 }
 
 .intro p:last-child {
@@ -193,7 +214,7 @@ nav {
 }
 
 .btn:hover {
-  background: #9b6b75;
+  background: var(--accent-deep);
   color: #fff;
   text-decoration: none;
   transform: translateY(-1px);
@@ -220,10 +241,35 @@ nav {
   transform: translateY(-1px);
 }
 
+/* ── Pixel Divider ── */
+.pixel-divider {
+  width: 100%;
+  height: 6px;
+  margin-top: 36px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--accent) 0px,
+      var(--accent) 6px,
+      transparent 6px,
+      transparent 8px,
+      var(--accent-3) 8px,
+      var(--accent-3) 14px,
+      transparent 14px,
+      transparent 16px,
+      var(--accent-4) 16px,
+      var(--accent-4) 22px,
+      transparent 22px,
+      transparent 24px
+    );
+  opacity: 0.5;
+}
+
 /* ── Sections ── */
 section {
   padding: 56px 0;
   border-top: 1px solid var(--border);
+  position: relative;
 }
 
 section h2 {
@@ -244,8 +290,39 @@ section h2::after {
   left: 0;
   width: 40px;
   height: 2px;
-  background: var(--accent);
+  background: linear-gradient(90deg, var(--accent), var(--accent-3));
   border-radius: 1px;
+}
+
+/* ═══ Artistic Corner Brackets on section hover ═══ */
+section::before,
+section::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+
+section::before {
+  top: 30px;
+  left: 0;
+  border-top: 1px solid var(--accent);
+  border-left: 1px solid var(--accent);
+}
+
+section::after {
+  top: 30px;
+  right: 0;
+  border-top: 1px solid var(--accent);
+  border-right: 1px solid var(--accent);
+}
+
+section:hover::before,
+section:hover::after {
+  opacity: 0.3;
 }
 
 /* ── About ── */
@@ -254,51 +331,35 @@ section h2::after {
   color: var(--muted);
   font-size: 15px;
   line-height: 1.8;
+  margin-bottom: 12px;
 }
 
-.facts {
-  list-style: none;
-  padding: 0;
-  margin: 20px 0 0;
+#about p:first-of-type::first-letter {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 3em;
+  font-weight: 700;
+  float: left;
+  line-height: 0.8;
+  margin-right: 8px;
+  margin-top: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-3));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Traits ── */
+.traits {
   display: grid;
-  gap: 10px;
-  color: var(--muted);
-  max-width: 520px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 28px;
 }
 
-.facts li {
-  padding-left: 20px;
-  position: relative;
-  font-size: 15px;
-}
-
-.facts li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 10px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.5;
-}
-
-.facts li strong {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* ── Projects ── */
-.project-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
-}
-
-.project-card {
+.trait-card {
+  text-align: center;
+  padding: 24px 14px 20px;
   background: var(--card);
-  padding: 26px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
   transition: all var(--transition);
@@ -306,77 +367,480 @@ section h2::after {
   overflow: hidden;
 }
 
-.project-card::before {
+.trait-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, var(--accent), var(--accent-2));
   transform: scaleX(0);
   transform-origin: left;
   transition: transform var(--transition);
 }
 
-.project-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 8px 32px rgba(44, 36, 22, 0.06);
-  transform: translateY(-2px);
-}
+.trait-card:nth-child(1)::before { background: var(--accent); }
+.trait-card:nth-child(2)::before { background: var(--accent-3); }
+.trait-card:nth-child(3)::before { background: var(--accent-4); }
+.trait-card:nth-child(4)::before { background: var(--accent-2); }
 
-.project-card:hover::before {
-  transform: scaleX(1);
-}
-
-.project-card h3 {
-  margin: 0 0 8px;
-  font-family: "Merriweather", "Georgia", serif;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--text);
-}
-
-.project-card p {
-  margin: 0 0 8px;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-.project-links a {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  margin-right: 12px;
-  color: var(--accent);
-}
-
-.project-links a:hover {
-  color: #9b6b75;
-}
-
-.project-screenshot {
-  width: 100%;
-  height: auto;
-  border-radius: 4px;
-  margin-top: 14px;
-  border: 1px solid var(--border);
-  opacity: 0.92;
+/* Corner accent on trait cards */
+.trait-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-bottom: 1px solid var(--accent);
+  border-right: 1px solid var(--accent);
+  opacity: 0;
   transition: opacity var(--transition);
 }
 
-.project-card:hover .project-screenshot {
+.trait-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(44, 36, 22, 0.06);
+}
+
+.trait-card:hover::before {
+  transform: scaleX(1);
+}
+
+.trait-card:hover::after {
+  opacity: 0.5;
+}
+
+.trait-icon {
+  font-size: 30px;
+  display: block;
+  margin-bottom: 10px;
+  transition: transform var(--transition);
+}
+
+.trait-card:hover .trait-icon {
+  transform: scale(1.15);
+}
+
+.trait-card h3 {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.trait-card p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Timeline ── */
+.section-desc {
+  color: var(--muted-light);
+  font-style: italic;
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 14px;
+  margin-bottom: 24px;
+  line-height: 1.8;
+}
+
+.timeline {
+  position: relative;
+  padding-left: 28px;
+  border-left: 1px solid var(--border);
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 32px;
+  padding-left: 20px;
+  transition: transform var(--transition);
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-item:hover {
+  transform: translateX(4px);
+}
+
+.timeline-dot {
+  position: absolute;
+  left: -33px;
+  top: 6px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  transition: all var(--transition);
+}
+
+.timeline-item:hover .timeline-dot {
+  transform: scale(1.4);
+  box-shadow: 0 0 0 6px rgba(181, 131, 141, 0.12);
+}
+
+.timeline-dot.future {
+  background: var(--accent-3);
+  width: 12px;
+  height: 12px;
+  left: -34px;
+  top: 5px;
+}
+
+.timeline-year {
+  font-size: 12px;
+  color: var(--muted-light);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.timeline-content h3 {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 18px;
+  font-weight: 700;
+  margin: 4px 0 6px;
+  color: var(--text);
+}
+
+.timeline-content p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 500px;
+}
+
+/* ── Interests Grid ── */
+.interests-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.interest-card {
+  text-align: center;
+  padding: 28px 20px 20px;
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.interest-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition);
+}
+
+.interest-card:nth-child(1)::before { background: var(--accent); }
+.interest-card:nth-child(2)::before { background: var(--accent-3); }
+.interest-card:nth-child(3)::before { background: var(--accent-4); }
+.interest-card:nth-child(4)::before { background: var(--accent-2); }
+
+/* Corner accent on interest cards */
+.interest-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 14px;
+  height: 14px;
+  border-bottom: 1px solid var(--accent-3);
+  border-right: 1px solid var(--accent-3);
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+
+.interest-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(44, 36, 22, 0.06);
+}
+
+.interest-card:hover::before {
+  transform: scaleX(1);
+}
+
+.interest-card:hover::after {
+  opacity: 0.5;
+}
+
+.interest-icon {
+  font-size: 36px;
+  margin-bottom: 12px;
+  transition: transform var(--transition);
+}
+
+.interest-card:hover .interest-icon {
+  transform: scale(1.15);
+}
+
+.interest-card h3 {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.interest-card p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.interest-photo {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 4px;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  opacity: 0.85;
+  transition: opacity var(--transition), transform var(--transition);
+  background: var(--border);
+}
+
+.interest-card:hover .interest-photo {
   opacity: 1;
 }
 
-.projects-note {
+/* ── Now ── */
+.now-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  max-width: 640px;
+}
+
+.now-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 22px;
+  background: var(--card);
+  transition: background var(--transition);
+}
+
+.now-item:hover {
+  background: #fdfaf5;
+}
+
+.now-label {
+  font-size: 11px;
   color: var(--muted-light);
-  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.now-value {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.now-updated {
   margin-top: 16px;
+  font-size: 11px;
+  color: var(--muted-light);
   font-style: italic;
   font-family: "Merriweather", "Georgia", serif;
+  letter-spacing: 0.04em;
+}
+
+/* ═══ MC Pixel Art: Grass Block ═══ */
+.mc-grass-block {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 10px;
+  position: relative;
+  background: var(--mc-brown);
+  border-radius: 2px;
+  box-shadow:
+    /* 顶部草皮 - 绿色像素 */
+    0 0 0 2px var(--mc-green),
+    /* 草皮纹理 */
+    4px -8px 0 0 var(--mc-green),
+    -4px -8px 0 0 var(--mc-green),
+    0 -8px 0 0 var(--mc-green),
+    8px 0 0 0 var(--mc-green),
+    -8px 0 0 0 var(--mc-green),
+    4px -4px 0 0 var(--mc-green),
+    -4px -4px 0 0 var(--mc-green),
+    0 -4px 0 0 var(--mc-green),
+    /* 侧面纹理 */
+    4px 0 0 0 var(--mc-brown),
+    -4px 0 0 0 var(--mc-brown),
+    0 4px 0 0 var(--mc-brown),
+    4px 4px 0 0 var(--mc-brown),
+    -4px 4px 0 0 var(--mc-brown);
+}
+
+/* ═══ MC Pixel Art: Diamond ═══ */
+.mc-diamond {
+  width: 0;
+  height: 0;
+  margin: 0 auto 16px;
+  position: relative;
+}
+
+.mc-diamond::before {
+  content: '';
+  position: absolute;
+  top: -18px;
+  left: -18px;
+  width: 36px;
+  height: 36px;
+  background: #3ab3da;
+  clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
+  box-shadow:
+    0 0 0 2px #2d9ec0,
+    inset 0 0 0 3px rgba(255,255,255,0.3);
+}
+
+/* ═══ MC Creeper Face (footer accent) ═══ */
+.mc-creeper {
+  width: 24px;
+  height: 24px;
+  margin: 0 auto 12px;
+  position: relative;
+  background: var(--mc-green);
+  border-radius: 1px;
+  box-shadow:
+    /* 眼睛 - 黑色 */
+    4px -4px 0 0 #1a1a1a,
+    -4px -4px 0 0 #1a1a1a,
+    /* 嘴巴 */
+    0 2px 0 0 #1a1a1a,
+    4px 2px 0 0 #1a1a1a,
+    -4px 2px 0 0 #1a1a1a;
+}
+
+/* ── Gallery (保留原有样式，供未来使用) ── */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.gallery-item {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  transition: all var(--transition);
+  aspect-ratio: 4 / 3;
+  background: var(--border);
+  position: relative;
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.gallery-item::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 10px;
+  height: 10px;
+  background:
+    linear-gradient(to right, var(--accent) 2px, transparent 2px),
+    linear-gradient(to bottom, var(--accent) 2px, transparent 2px);
+  opacity: 0;
+  transition: opacity var(--transition);
+  pointer-events: none;
+}
+
+.gallery-item:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 28px rgba(44, 36, 22, 0.08);
+}
+
+.gallery-item:hover img {
+  transform: scale(1.05);
+}
+
+.gallery-item:hover::after {
+  opacity: 0.6;
+}
+
+/* ── Goals ── */
+.goals-list {
+  display: grid;
+  gap: 20px;
+  max-width: 600px;
+}
+
+.goal-item {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  transition: transform var(--transition);
+  padding: 4px 0;
+}
+
+.goal-item:hover {
+  transform: translateX(4px);
+}
+
+.goal-number {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  opacity: 0.5;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 40px;
+  transition: all var(--transition);
+}
+
+.goal-item:hover .goal-number {
+  opacity: 0.8;
+  color: var(--accent-deep);
+}
+
+.goal-item h3 {
+  font-family: "Merriweather", "Georgia", serif;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+
+.goal-item p {
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
 }
 
 /* ── Contact ── */
@@ -452,18 +916,31 @@ section h2::after {
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-form button::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(255,255,255,0.4);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--transition);
 }
 
 .contact-form button:hover {
-  background: #9b6b75;
+  background: var(--accent-deep);
   transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(181, 131, 141, 0.25);
 }
 
-.form-note {
-  font-size: 12px;
-  color: var(--muted-light);
-  font-style: italic;
+.contact-form button:hover::after {
+  transform: scaleX(1);
 }
 
 /* ── Footer ── */
@@ -474,6 +951,7 @@ footer {
   border-top: 1px solid var(--border);
   font-size: 13px;
   letter-spacing: 0.03em;
+  position: relative;
 }
 
 footer a {
@@ -485,7 +963,92 @@ footer a:hover {
   color: var(--accent);
 }
 
-/* ── Scroll Reveal (works with script.js) ── */
+/* MC pixel deco above footer */
+.footer-pixel-deco {
+  width: 32px;
+  height: 6px;
+  margin: 0 auto 16px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      var(--accent) 0px,
+      var(--accent) 4px,
+      transparent 4px,
+      transparent 6px,
+      var(--accent-3) 6px,
+      var(--accent-3) 10px,
+      transparent 10px,
+      transparent 12px,
+      var(--mc-green) 12px,
+      var(--mc-green) 16px,
+      transparent 16px,
+      transparent 18px,
+      var(--mc-gold) 18px,
+      var(--mc-gold) 22px,
+      transparent 22px,
+      transparent 24px,
+      var(--accent-4) 24px,
+      var(--accent-4) 28px,
+      transparent 28px,
+      transparent 30px
+    );
+  opacity: 0.4;
+}
+
+.footer-quote {
+  font-family: "Merriweather", "Georgia", serif;
+  font-style: italic;
+  font-size: 12px;
+  margin-top: 8px;
+  color: var(--muted-light);
+}
+
+.mc-tag {
+  font-family: "Press Start 2P", monospace;
+  font-size: 8px;
+  margin-top: 12px;
+  color: var(--mc-green);
+  opacity: 0.5;
+  letter-spacing: 0.1em;
+}
+
+/* ── Back to Top ── */
+.back-to-top {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 40px;
+  height: 40px;
+  border-radius: 2px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: all var(--transition);
+  pointer-events: none;
+  z-index: 200;
+  box-shadow: 0 4px 16px rgba(181, 131, 141, 0.2);
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.back-to-top:hover {
+  background: var(--accent-deep);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(181, 131, 141, 0.3);
+}
+
+/* ── Scroll Reveal ── */
 .reveal {
   opacity: 0;
   transform: translateY(24px);
@@ -518,8 +1081,24 @@ footer a:hover {
     font-size: 32px;
   }
 
-  .project-list {
+  .traits {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .interests-grid {
     grid-template-columns: 1fr;
+  }
+
+  .now-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mc-floating-block {
+    display: none;
   }
 
   .nav-links {
@@ -532,6 +1111,22 @@ footer a:hover {
 
   section {
     padding: 40px 0;
+  }
+
+  .back-to-top {
+    bottom: 20px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .pixel-divider {
+    margin-top: 24px;
+  }
+
+  #about p:first-of-type::first-letter {
+    font-size: 2.4em;
   }
 }
 
@@ -553,9 +1148,10 @@ footer a:hover {
   }
   nav,
   .contact-form,
-  .project-screenshot,
-  .btn,
-  .btn-outline {
+  .back-to-top,
+  .gallery-item,
+  .pixel-divider,
+  .footer-pixel-deco {
     display: none;
   }
   body {
@@ -572,14 +1168,25 @@ footer a:hover {
     --muted: #a09480;
     --muted-light: #6b6254;
     --accent: #c9a0a8;
+    --accent-deep: #b0868e;
     --accent-2: #a89880;
+    --accent-3: #8aac9a;
+    --accent-4: #c4b098;
+    --mc-green: #6da84a;
+    --mc-brown: #9a7a58;
+    --mc-gold: #d4b050;
     --border: #2e2a22;
+  }
+
+  .now-item:hover {
+    background: #25221a;
   }
 
   body {
     background-image:
-      radial-gradient(ellipse at 20% 0%, rgba(201, 160, 168, 0.06) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, rgba(168, 152, 128, 0.05) 0%, transparent 60%);
+      radial-gradient(ellipse at 20% 0%, rgba(201, 160, 168, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 60%, rgba(138, 172, 154, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(196, 176, 152, 0.05) 0%, transparent 60%);
   }
 
   header {
@@ -587,6 +1194,11 @@ footer a:hover {
   }
 
   .btn:hover {
-    background: #b0868e;
+    background: var(--accent-deep);
+  }
+
+  .avatar {
+    background: linear-gradient(var(--bg), var(--bg)) padding-box,
+                linear-gradient(135deg, var(--accent), var(--accent-3), var(--accent-4)) border-box;
   }
 }
