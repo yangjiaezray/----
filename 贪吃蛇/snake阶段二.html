@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>贪吃蛇 · 阶段二（AI 自动演示）</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;min-height:100vh;
+    background:#0f1115;color:#e6e6e6;
+    font-family:"Microsoft YaHei","WenQuanYi Micro Hei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;
+  }
+  h1{font-size:20px;margin:0 0 14px;letter-spacing:1px}
+
+  .wrap{display:flex;gap:18px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  canvas{background:#0b0d12;border:1px solid #2a2f3a;border-radius:8px;display:block}
+
+  .panel{
+    width:240px;background:#171a21;border:1px solid #2a2f3a;
+    border-radius:8px;padding:16px;
+  }
+  .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:10px}
+  .row .val{color:#4ade80;font-weight:bold}
+
+  button{
+    width:100%;padding:9px;margin-bottom:8px;cursor:pointer;
+    background:#2a2f3a;color:#e6e6e6;border:1px solid #3a4050;border-radius:6px;font-size:14px;
+    transition:background .15s,border-color .15s;
+  }
+  button:hover{background:#343a48}
+
+  .btn-ai{
+    background:#1a3a2a;border-color:#2d5a3d;color:#4ade80;font-weight:bold;
+  }
+  .btn-ai:hover{background:#23402e}
+  .btn-ai.active{
+    background:#4ade80;color:#0f1115;border-color:#4ade80;
+  }
+  .btn-ai.active:hover{background:#3cc96e}
+
+  .tip{font-size:12px;color:#8b93a7;line-height:1.9;margin-top:10px}
+  .tip b{color:#e6e6e6}
+
+  .board{position:relative}
+  .mask{
+    position:absolute;inset:0;display:none;
+    background:rgba(10,12,16,.82);border-radius:8px;
+    flex-direction:column;align-items:center;justify-content:center;
+  }
+  .mask.show{display:flex}
+  .mask .big{font-size:22px;font-weight:bold;color:#f87171;margin-bottom:6px}
+  .mask .small{font-size:13px;color:#9aa3b5}
+
+  .ai-progress{
+    background:#1a231e;border:1px solid #2d5a3d;border-radius:6px;
+    padding:10px 12px;margin-bottom:12px;
+  }
+  .ai-progress .label{font-size:12px;color:#8b93a7;margin-bottom:4px}
+  .ai-progress .value{font-size:18px;font-weight:bold;color:#4ade80}
+  .ai-progress .bar-bg{
+    width:100%;height:6px;background:#2a2f3a;border-radius:3px;margin-top:6px;
+  }
+  .ai-progress .bar-fill{
+    height:100%;background:#4ade80;border-radius:3px;transition:width .2s;
+  }
+  .ai-progress .done{color:#fbbf24;font-size:12px;margin-top:4px}
+</style>
+</head>
+<body>
+
+<h1>🐍 贪吃蛇 · 阶段二（手动 + AI 自动演示）</h1>
+
+<div class="wrap">
+  <div class="board">
+    <canvas id="cv" width="400" height="400"></canvas>
+    <div class="mask" id="mask">
+      <div class="big" id="maskTitle">游戏结束</div>
+      <div class="small" id="maskText">点击"重新开始"再来一局</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="row"><span>当前分数</span><span class="val" id="score">0</span></div>
+    <div class="row"><span>已吃食物</span><span class="val" id="eaten">0</span></div>
+    <div class="row"><span>蛇身长度</span><span class="val" id="len">3</span></div>
+    <div class="row"><span>最高分</span><span class="val" id="best">0</span></div>
+    <div class="row"><span>状态</span><span class="val" id="state">待开始</span></div>
+
+    <hr style="border:none;border-top:1px solid #2a2f3a;margin:14px 0">
+
+    <button id="btnStart">开始 / 暂停</button>
+    <button id="btnReset">重新开始</button>
+    <button id="btnAI" class="btn-ai">🤖 AI 自动演示</button>
+
+    <div class="ai-progress" id="aiBox">
+      <div class="label">🤖 AI 本轮已吃</div>
+      <div class="value"><span id="aiEaten">0</span> / <span id="aiTarget">15</span></div>
+      <div class="bar-bg"><div class="bar-fill" id="aiBar" style="width:0%"></div></div>
+      <div class="done" id="aiDone"></div>
+    </div>
+
+    <div class="tip">
+      <div>🎮 <b>方向键</b> 或 <b>WASD</b> 控制方向</div>
+      <div>⏸ <b>空格</b> 开始 / 暂停</div>
+      <div>🤖 <b>AI 演示</b> 自动寻路吃食物</div>
+      <div>🎯 AI 目标：连续吃完 <b>15</b> 个食物不死</div>
+      <div>❌ <b>撞墙</b> 或 <b>撞到自己</b> 即结束</div>
+      <div>🍎 吃一个食物 <b>+10 分</b>，蛇身变长 1 节</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   贪吃蛇 阶段二：手动模式 + AI 自动演示
+   —— 纯 HTML + CSS + JavaScript，不依赖任何外部库
+   AI 策略：BFS 最短路径 + 安全性模拟 + 追尾保命
+   ========================================================================== */
+
+/* ---------- 1. 基础常量 ---------- */
+const COLS = 20;
+const ROWS = 20;
+const CELL = 20;
+
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const $   = id => document.getElementById(id);
+
+/* ---------- 2. 颜色主题 ---------- */
+const COLOR = {
+  bg:    '#0b0d12',
+  grid:  '#13161d',
+  snake: '#4ade80',
+  head:  '#22c55e',
+  food:  '#f87171'
+};
+
+/* ---------- 3. 游戏状态变量 ---------- */
+let snake    = [];
+let dir      = {};
+let nextDir  = {};
+let food     = {};
+let score    = 0;
+let eaten    = 0;
+let alive    = true;
+let running  = false;
+let timer    = null;
+let best     = Number(localStorage.getItem('snake_best') || 0);
+
+/* ---------- 3.5 AI 状态变量 ---------- */
+let aiMode         = false;  // AI 模式开关
+const AI_TARGET    = 15;     // AI 目标：连续吃完 15 个食物
+let aiEatenThisRun = 0;      // AI 本轮连续吃掉的食物数
+let aiReachedGoal  = false;  // AI 已达成 15 目标
+const AI_SPEED     = 70;     // AI 模式每步间隔（毫秒），比手动的 120ms 略快
+const MANUAL_SPEED = 120;    // 手动模式每步间隔
+
+/* ---------- 4. 小工具函数 ---------- */
+const key    = p => p.x + ',' + p.y;
+const eq     = (a, b) => a.x === b.x && a.y === b.y;
+const inside = p => p.x >= 0 && p.x < COLS && p.y >= 0 && p.y < ROWS;
+
+/* ---------- 5. 随机生成食物 ---------- */
+function makeFood() {
+  const occupied = new Set(snake.map(key));
+  const free = [];
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      if (!occupied.has(x + ',' + y)) free.push({ x, y });
+    }
+  }
+  if (free.length === 0) return null;
+  return free[Math.floor(Math.random() * free.length)];
+}
+
+/* ---------- 6. 初始化 / 重置一局 ---------- */
+function reset() {
+  snake    = [{ x:10, y:10 }, { x:9, y:10 }, { x:8, y:10 }];
+  dir      = { x:1, y:0 };
+  nextDir  = { x:1, y:0 };
+  food     = makeFood();
+  score    = 0;
+  eaten    = 0;
+  alive    = true;
+  running  = false;
+  aiEatenThisRun = 0;
+  aiReachedGoal  = false;
+  stop();
+  $('mask').classList.remove('show');
+  updateHUD();
+  updateAIHUD();
+  draw();
+  setState('待开始');
+}
+
+/* ---------- 7. 画棋盘 ---------- */
+function draw() {
+  ctx.fillStyle = COLOR.bg;
+  ctx.fillRect(0, 0, cv.width, cv.height);
+
+  ctx.strokeStyle = COLOR.grid;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= COLS; i++) {
+    ctx.beginPath(); ctx.moveTo(i*CELL, 0); ctx.lineTo(i*CELL, cv.height); ctx.stroke();
+  }
+  for (let i = 0; i <= ROWS; i++) {
+    ctx.beginPath(); ctx.moveTo(0, i*CELL); ctx.lineTo(cv.width, i*CELL); ctx.stroke();
+  }
+
+  if (food) {
+    ctx.fillStyle = COLOR.food;
+    ctx.beginPath();
+    ctx.arc(food.x*CELL + CELL/2, food.y*CELL + CELL/2, CELL/2 - 3, 0, Math.PI*2);
+    ctx.fill();
+  }
+
+  snake.forEach((s, i) => {
+    ctx.fillStyle = (i === 0) ? COLOR.head : COLOR.snake;
+    ctx.fillRect(s.x*CELL + 1, s.y*CELL + 1, CELL - 2, CELL - 2);
+  });
+}
+
+/* ---------- 8. 走一步（核心逻辑） ---------- */
+function step() {
+  dir = nextDir;
+
+  const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+
+  if (!inside(head)) return gameOver('撞到墙了');
+
+  const body = snake.slice(0, -1);
+  if (body.some(s => eq(s, head))) return gameOver('撞到自己了');
+
+  snake.unshift(head);
+
+  if (eq(head, food)) {
+    score += 10;
+    eaten += 1;
+    aiEatenThisRun += 1;
+    if (!aiReachedGoal && aiEatenThisRun >= AI_TARGET) {
+      aiReachedGoal = true;
+    }
+    if (score > best) {
+      best = score;
+      localStorage.setItem('snake_best', best);
+    }
+    food = makeFood();
+    if (food === null) {
+      stop();
+      $('maskTitle').textContent = '🎉 通关！';
+      $('maskText').textContent  = '棋盘已被你填满，最终分数 ' + score;
+      $('mask').classList.add('show');
+      setState('通关');
+      updateHUD();
+      updateAIHUD();
+      return;
+    }
+  } else {
+    snake.pop();
+  }
+
+  updateHUD();
+  updateAIHUD();
+  draw();
+}
+
+/* ---------- 9. 游戏结束 ---------- */
+function gameOver(reason) {
+  alive = false;
+  stop();
+  $('maskTitle').textContent = '游戏结束';
+  let extra = '';
+  if (aiMode && aiEatenThisRun > 0) {
+    extra = '　|　AI 本轮吃了 ' + aiEatenThisRun + ' 个';
+    if (aiReachedGoal) extra += '（✅ 已达标）';
+  }
+  $('maskText').textContent = reason + '　|　最终分数 ' + score + '　|　吃了 ' + eaten + ' 个' + extra;
+  $('mask').classList.add('show');
+  setState('已结束');
+  updateHUD();
+  updateAIHUD();
+}
+
+/* ---------- 10. 开始 / 停止 ---------- */
+function start() {
+  if (running || !alive) return;
+  running = true;
+  const interval = aiMode ? AI_SPEED : MANUAL_SPEED;
+  timer = setInterval(() => {
+    if (aiMode && alive && running) aiDecide();
+    step();
+  }, interval);
+  setState(aiMode ? 'AI 自动中' : '游戏中');
+}
+
+function stop() {
+  running = false;
+  clearInterval(timer);
+}
+
+/* ---------- 11. 刷新面板 ---------- */
+function updateHUD() {
+  $('score').textContent = score;
+  $('eaten').textContent = eaten;
+  $('len').textContent   = snake.length;
+  $('best').textContent  = best;
+}
+
+function updateAIHUD() {
+  $('aiEaten').textContent = aiEatenThisRun;
+  $('aiTarget').textContent = AI_TARGET;
+  const pct = Math.min(100, Math.round((aiEatenThisRun / AI_TARGET) * 100));
+  $('aiBar').style.width = pct + '%';
+  if (aiReachedGoal) {
+    $('aiDone').textContent = '✅ AI 已完成 ' + AI_TARGET + ' 个目标！继续自动运行中...';
+  } else {
+    $('aiDone').textContent = '';
+  }
+}
+
+function setState(s) { $('state').textContent = s; }
+
+/* ==========================================================================
+   ====== 阶段二：AI 自动寻路模块 ======
+   ========================================================================== */
+
+/* ---------- A1. BFS 最短路径 ---------- */
+// 参数 obstacles: Set 类型，包含不可走的格子（蛇身）
+// 返回: 最短路径数组 [start, ..., target]，若不可达返回 null
+function bfs(start, target, obstacles) {
+  const queue = [[start]];
+  let head = 0;
+  const visited = new Set([key(start)]);
+
+  const DIRS = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+
+  while (head < queue.length) {
+    const path = queue[head++];
+    const current = path[path.length - 1];
+
+    if (eq(current, target)) return path;
+
+    for (const d of DIRS) {
+      const n = { x: current.x + d.x, y: current.y + d.y };
+      const nk = key(n);
+      if (inside(n) && !visited.has(nk) && !obstacles.has(nk)) {
+        visited.add(nk);
+        queue.push([...path, n]);
+      }
+    }
+  }
+  return null;
+}
+
+/* ---------- A2. 根据相邻两点反推方向 ---------- */
+function getDirection(from, to) {
+  return { x: Math.sign(to.x - from.x), y: Math.sign(to.y - from.y) };
+}
+
+/* ---------- A3. 安全性模拟 ---------- */
+// 模拟蛇按路径走完（最后一步吃食物），检查之后蛇头能否到达蛇尾
+// 如果能到达 → 安全（蛇不会把自己困死）
+// 如果不能 → 危险（这个食物不能去吃）
+function isPathSafe(path) {
+  if (!path || path.length < 2) return false;
+
+  // 克隆一份蛇的状态做模拟
+  const vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+
+  // 一步步模拟，最后一步是食物（不删尾巴）
+  for (let i = 1; i < path.length; i++) {
+    vSnake.unshift(path[i]);
+    if (i < path.length - 1) {
+      vSnake.pop();
+    }
+  }
+
+  // 模拟结束后，检查虚拟蛇头能否到达虚拟蛇尾
+  // 注意：障碍物不包含蛇尾，因为蛇尾在后续移动中会同步让开
+  const vHead = vSnake[0];
+  const vTail = vSnake[vSnake.length - 1];
+  const obstacles = new Set(vSnake.slice(1, -1).map(key));
+
+  return bfs(vHead, vTail, obstacles) !== null;
+}
+
+/* ---------- A4. AI 决策主函数 ---------- */
+// 策略优先级：
+//   1. 找去食物的最短路径 → 安全就选它
+//   2. 不安全就追尾巴（保命策略）
+//   3. 追不到尾巴就选任意安全方向
+function aiDecide() {
+  if (!alive || snake.length === 0) return;
+
+  // —— 策略 1：最短路径去食物 ——
+  const bodySet = new Set(snake.slice(0, -1).map(key));
+  const pathToFood = bfs(snake[0], food, bodySet);
+
+  if (pathToFood && pathToFood.length >= 2) {
+    if (isPathSafe(pathToFood)) {
+      nextDir = getDirection(snake[0], pathToFood[1]);
+      return;
+    }
+  }
+
+  // —— 策略 2：追尾巴保命 ——
+  const tail = snake[snake.length - 1];
+  const allBody = new Set(snake.map(key));
+  allBody.delete(key(tail));
+  const pathToTail = bfs(snake[0], tail, allBody);
+
+  if (pathToTail && pathToTail.length >= 2) {
+    nextDir = getDirection(snake[0], pathToTail[1]);
+    return;
+  }
+
+  // —— 策略 3：任意安全方向（最后兜底） ——
+  const DIRS = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+  const bodyObstacles = new Set(snake.slice(0, -1).map(key));
+  for (const d of DIRS) {
+    const n = { x: snake[0].x + d.x, y: snake[0].y + d.y };
+    if (inside(n) && !bodyObstacles.has(key(n))) {
+      nextDir = d;
+      return;
+    }
+  }
+
+  // 无路可走，保持当前方向（撞墙/撞自己会在 step() 里判定）
+}
+
+/* ==========================================================================
+   ====== 阶段二结束：AI 模块完毕 ======
+   ========================================================================== */
+
+/* ---------- 12. 按钮事件 ---------- */
+$('btnStart').onclick = () => {
+  if (!alive) { reset(); start(); return; }
+  if (running) { stop(); setState('已暂停'); }
+  else         { start(); }
+};
+
+$('btnReset').onclick = () => { reset(); };
+
+$('btnAI').onclick = () => {
+  aiMode = !aiMode;
+  const btn = $('btnAI');
+
+  if (aiMode) {
+    // 开启 AI 模式
+    btn.textContent = '🤖 AI 运行中（点击关闭）';
+    btn.classList.add('active');
+    // 重置并自动开始
+    reset();
+    start();
+  } else {
+    // 关闭 AI 模式
+    btn.textContent = '🤖 AI 自动演示';
+    btn.classList.remove('active');
+    reset();
+  }
+};
+
+/* ---------- 13. 键盘事件 ---------- */
+const KEYMAP = {
+  ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1}, ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0},
+  w:{x:0,y:-1}, s:{x:0,y:1}, a:{x:-1,y:0}, d:{x:1,y:0}
+};
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') {
+    if (!alive) { reset(); start(); }
+    else if (running) { stop(); setState('已暂停'); }
+    else { start(); }
+    e.preventDefault();
+    return;
+  }
+
+  // AI 模式下禁止手动方向输入
+  if (aiMode) return;
+
+  const k = (e.key.length === 1) ? e.key.toLowerCase() : e.key;
+  const nd = KEYMAP[k];
+  if (!nd) return;
+
+  if (snake.length > 1 && nd.x === -dir.x && nd.y === -dir.y) return;
+
+  nextDir = nd;
+  e.preventDefault();
+});
+
+/* ---------- 14. 启动 ---------- */
+reset();
+</script>
+</body>
+</html>
