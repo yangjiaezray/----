@@ -154,8 +154,10 @@ let aiMode         = false;  // AI 模式开关
 const AI_TARGET    = 15;     // AI 目标：连续吃完 15 个食物
 let aiEatenThisRun = 0;      // AI 本轮连续吃掉的食物数
 let aiReachedGoal  = false;  // AI 已达成 15 目标
+let aiStepsNoFood  = 0;      // AI 连续多少步没吃到食物（死锁检测）
 const AI_SPEED     = 70;     // AI 模式每步间隔（毫秒），比手动的 120ms 略快
 const MANUAL_SPEED = 120;    // 手动模式每步间隔
+const AI_STARVE_LIMIT = 180; // 连续 180 步没吃到食物 → 强行冒险吃
 
 /* ---------- 4. 小工具函数 ---------- */
 const key    = p => p.x + ',' + p.y;
@@ -187,6 +189,7 @@ function reset() {
   running  = false;
   aiEatenThisRun = 0;
   aiReachedGoal  = false;
+  aiStepsNoFood  = 0;
   stop();
   $('mask').classList.remove('show');
   updateHUD();
@@ -239,6 +242,7 @@ function step() {
     score += 10;
     eaten += 1;
     aiEatenThisRun += 1;
+    aiStepsNoFood = 0;        // 吃到食物，重置饥饿计数器
     if (!aiReachedGoal && aiEatenThisRun >= AI_TARGET) {
       aiReachedGoal = true;
     }
@@ -259,6 +263,7 @@ function step() {
     }
   } else {
     snake.pop();
+    if (aiMode) aiStepsNoFood++;  // AI 模式下，没吃到就累计饥饿
   }
 
   updateHUD();
@@ -315,8 +320,14 @@ function updateAIHUD() {
   $('aiBar').style.width = pct + '%';
   if (aiReachedGoal) {
     $('aiDone').textContent = '✅ AI 已完成 ' + AI_TARGET + ' 个目标！继续自动运行中...';
+  } else if (aiMode && aiStepsNoFood >= AI_STARVE_LIMIT * 0.7) {
+    // 饥饿接近阈值时给出警告
+    const remain = AI_STARVE_LIMIT - aiStepsNoFood;
+    $('aiDone').textContent = '⚠ 已 ' + aiStepsNoFood + ' 步未进食，' + (remain > 0 ? '再 ' + remain + ' 步将强制冲刺' : '🔥 饥饿模式：强制冲刺吃食物！');
+    $('aiDone').style.color = aiStepsNoFood >= AI_STARVE_LIMIT ? '#f87171' : '#fbbf24';
   } else {
     $('aiDone').textContent = '';
+    $('aiDone').style.color = '#fbbf24';
   }
 }
 
@@ -389,16 +400,25 @@ function isPathSafe(path) {
 /* ---------- A4. AI 决策主函数 ---------- */
 // 策略优先级：
 //   1. 找去食物的最短路径 → 安全就选它
-//   2. 不安全就追尾巴（保命策略）
-//   3. 追不到尾巴就选任意安全方向
+//   2. 饥饿太久 → 不管安不安全，强行最短路径去吃（打破死锁）
+//   3. 不安全就追尾巴（保命策略）
+//   4. 追不到尾巴就选任意安全方向
 function aiDecide() {
   if (!alive || snake.length === 0) return;
 
-  // —— 策略 1：最短路径去食物 ——
   const bodySet = new Set(snake.slice(0, -1).map(key));
   const pathToFood = bfs(snake[0], food, bodySet);
 
+  // —— 饥饿强制进食：连续 N 步没吃到食物，不管安不安全都去吃 ——
+  const starving = aiStepsNoFood >= AI_STARVE_LIMIT;
+
   if (pathToFood && pathToFood.length >= 2) {
+    if (starving) {
+      // 饥饿模式：跳过安全检查，直接用最短路径冲
+      nextDir = getDirection(snake[0], pathToFood[1]);
+      return;
+    }
+    // —— 策略 1：最短路径去食物 + 安全检查 ——
     if (isPathSafe(pathToFood)) {
       nextDir = getDirection(snake[0], pathToFood[1]);
       return;
