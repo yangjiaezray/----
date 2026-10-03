@@ -157,7 +157,7 @@ let aiReachedGoal  = false;  // AI 已达成 15 目标
 let aiStepsNoFood  = 0;      // AI 连续多少步没吃到食物（死锁检测）
 const AI_SPEED     = 70;     // AI 模式每步间隔（毫秒），比手动的 120ms 略快
 const MANUAL_SPEED = 120;    // 手动模式每步间隔
-const AI_STARVE_LIMIT = 180; // 连续 180 步没吃到食物 → 强行冒险吃
+const AI_STARVE_LIMIT = 350; // 连续 350 步没吃到食物 → 启动饥饿模式
 
 /* ---------- 4. 小工具函数 ---------- */
 const key    = p => p.x + ',' + p.y;
@@ -320,8 +320,8 @@ function updateAIHUD() {
   $('aiBar').style.width = pct + '%';
   if (aiReachedGoal) {
     $('aiDone').textContent = '✅ AI 已完成 ' + AI_TARGET + ' 个目标！继续自动运行中...';
-  } else if (aiMode && aiStepsNoFood >= AI_STARVE_LIMIT * 0.7) {
-    // 饥饿接近阈值时给出警告
+  } else if (aiMode && aiStepsNoFood >= AI_STARVE_LIMIT * 0.6) {
+    // 饥饿接近阈值时给出警告（60% 起预警）
     const remain = AI_STARVE_LIMIT - aiStepsNoFood;
     $('aiDone').textContent = '⚠ 已 ' + aiStepsNoFood + ' 步未进食，' + (remain > 0 ? '再 ' + remain + ' 步将强制冲刺' : '🔥 饥饿模式：强制冲刺吃食物！');
     $('aiDone').style.color = aiStepsNoFood >= AI_STARVE_LIMIT ? '#f87171' : '#fbbf24';
@@ -370,62 +370,98 @@ function getDirection(from, to) {
   return { x: Math.sign(to.x - from.x), y: Math.sign(to.y - from.y) };
 }
 
-/* ---------- A3. 安全性模拟 ---------- */
-// 模拟蛇按路径走完（最后一步吃食物），检查之后蛇头能否到达蛇尾
-// 如果能到达 → 安全（蛇不会把自己困死）
-// 如果不能 → 危险（这个食物不能去吃）
-function isPathSafe(path) {
-  if (!path || path.length < 2) return false;
+/* ---------- A3. 安全性检查（双档位） ---------- */
+// isPathSafe:      严格模式 —— 模拟吃食物后，蛇头必须能 BFS 走到蛇尾
+// isPathSafeLenient: 宽松模式 —— 洪水填充，可达空格 ≥ 蛇身 × 30%，且 ≥ 2 逃生路
+// 严格模式保证短~中蛇不冒险；宽松模式给高蛇长时打破死锁一个"软着陆"
 
-  // 克隆一份蛇的状态做模拟
-  const vSnake = snake.map(s => ({ x: s.x, y: s.y }));
-
-  // 一步步模拟，最后一步是食物（不删尾巴）
-  for (let i = 1; i < path.length; i++) {
-    vSnake.unshift(path[i]);
-    if (i < path.length - 1) {
-      vSnake.pop();
+function countReachable(start, obstacles) {
+  const visited = new Set([key(start)]);
+  const queue = [start];
+  let headIdx = 0;
+  const DIRS = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+  while (headIdx < queue.length) {
+    const cur = queue[headIdx++];
+    for (const d of DIRS) {
+      const n = { x: cur.x + d.x, y: cur.y + d.y };
+      const nk = key(n);
+      if (inside(n) && !visited.has(nk) && !obstacles.has(nk)) {
+        visited.add(nk);
+        queue.push(n);
+      }
     }
   }
+  return visited.size;
+}
 
-  // 模拟结束后，检查虚拟蛇头能否到达虚拟蛇尾
-  // 注意：障碍物不包含蛇尾，因为蛇尾在后续移动中会同步让开
+function isPathSafe(path) {
+  if (!path || path.length < 2) return false;
+  const vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+  for (let i = 1; i < path.length; i++) {
+    vSnake.unshift(path[i]);
+    if (i < path.length - 1) vSnake.pop();
+  }
   const vHead = vSnake[0];
   const vTail = vSnake[vSnake.length - 1];
   const obstacles = new Set(vSnake.slice(1, -1).map(key));
-
+  // 严格检查：头必须能走到尾
   return bfs(vHead, vTail, obstacles) !== null;
+}
+
+function isPathSafeLenient(path) {
+  if (!path || path.length < 2) return false;
+  const vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+  for (let i = 1; i < path.length; i++) {
+    vSnake.unshift(path[i]);
+    if (i < path.length - 1) vSnake.pop();
+  }
+  const vHead = vSnake[0];
+  const vTail = vSnake[vSnake.length - 1];
+  const snakeLen = vSnake.length;
+  const obstacles = new Set(vSnake.slice(1).map(key));
+  obstacles.delete(key(vTail));
+  const reachable = countReachable(vHead, obstacles);
+  const DIRS = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+  let escapeRoutes = 0;
+  for (const d of DIRS) {
+    const n = { x: vHead.x + d.x, y: vHead.y + d.y };
+    if (inside(n) && !obstacles.has(key(n))) escapeRoutes++;
+  }
+  // 宽松条件：可达区域 ≥ 蛇身 30%，且至少 2 条逃生路
+  return reachable >= snakeLen * 0.30 && escapeRoutes >= 2;
 }
 
 /* ---------- A4. AI 决策主函数 ---------- */
 // 策略优先级：
-//   1. 找去食物的最短路径 → 安全就选它
-//   2. 饥饿太久 → 不管安不安全，强行最短路径去吃（打破死锁）
-//   3. 不安全就追尾巴（保命策略）
-//   4. 追不到尾巴就选任意安全方向
+//   1. 最短路径去食物 + 严格安全检查 → 安全就吃
+//   2. 饥饿模式 → 用宽松检查去食物（打破死锁，但不盲目自杀）
+//   3. 追尾巴保命
+//   4. 任意安全方向兜底
 function aiDecide() {
   if (!alive || snake.length === 0) return;
 
+  // —— 策略 1 & 2：去食物 ——
   const bodySet = new Set(snake.slice(0, -1).map(key));
   const pathToFood = bfs(snake[0], food, bodySet);
 
-  // —— 饥饿强制进食：连续 N 步没吃到食物，不管安不安全都去吃 ——
-  const starving = aiStepsNoFood >= AI_STARVE_LIMIT;
-
   if (pathToFood && pathToFood.length >= 2) {
-    if (starving) {
-      // 饥饿模式：跳过安全检查，直接用最短路径冲
-      nextDir = getDirection(snake[0], pathToFood[1]);
-      return;
-    }
-    // —— 策略 1：最短路径去食物 + 安全检查 ——
-    if (isPathSafe(pathToFood)) {
-      nextDir = getDirection(snake[0], pathToFood[1]);
-      return;
+    // 饥饿模式：用宽松检查
+    if (aiStepsNoFood >= AI_STARVE_LIMIT) {
+      if (isPathSafeLenient(pathToFood)) {
+        nextDir = getDirection(snake[0], pathToFood[1]);
+        return;
+      }
+      // 宽松也通不过 → 放弃吃这个食物，继续追尾（等食物刷新或局面变化）
+    } else {
+      // 正常模式：用严格检查
+      if (isPathSafe(pathToFood)) {
+        nextDir = getDirection(snake[0], pathToFood[1]);
+        return;
+      }
     }
   }
 
-  // —— 策略 2：追尾巴保命 ——
+  // —— 策略 3：追尾巴保命 ——
   const tail = snake[snake.length - 1];
   const allBody = new Set(snake.map(key));
   allBody.delete(key(tail));
@@ -436,7 +472,7 @@ function aiDecide() {
     return;
   }
 
-  // —— 策略 3：任意安全方向（最后兜底） ——
+  // —— 策略 4：任意安全方向兜底 ——
   const DIRS = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
   const bodyObstacles = new Set(snake.slice(0, -1).map(key));
   for (const d of DIRS) {
@@ -446,7 +482,6 @@ function aiDecide() {
       return;
     }
   }
-
   // 无路可走，保持当前方向（撞墙/撞自己会在 step() 里判定）
 }
 
