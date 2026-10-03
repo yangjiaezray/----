@@ -113,13 +113,44 @@ function aiDecide(snake, food, aiStepsNoFood) {
   const starving = aiStepsNoFood >= AI_STARVE_LIMIT;
 
   if (pathToFood && pathToFood.length >= 2) {
+    // 正常模式：严格检查
+    if (!starving) {
+      if (isPathSafe(pathToFood, snake)) {
+        return getDirection(snake[0], pathToFood[1]);
+      }
+      // 绕路策略
+      const DIRS4 = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+      for (const d of DIRS4) {
+        const n = { x: snake[0].x + d.x, y: snake[0].y + d.y };
+        if (!inside(n) || bodySet.has(key(n))) continue;
+        let vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+        vSnake.unshift({ x: n.x, y: n.y });
+        vSnake.pop();
+        const localObs = new Set(vSnake.slice(0, -1).map(key));
+        const detourPath = bfs(n, food, localObs);
+        if (detourPath && detourPath.length >= 2 && isPathSafe(detourPath, vSnake)) {
+          return d;
+        }
+      }
+    }
+
+    // 饥饿模式
     if (starving) {
       if (isPathSafeLenient(pathToFood, snake)) {
         return getDirection(snake[0], pathToFood[1]);
       }
-    } else {
-      if (isPathSafe(pathToFood, snake)) {
-        return getDirection(snake[0], pathToFood[1]);
+      const DIRS4 = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+      for (const d of DIRS4) {
+        const n = { x: snake[0].x + d.x, y: snake[0].y + d.y };
+        if (!inside(n) || bodySet.has(key(n))) continue;
+        let vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+        vSnake.unshift({ x: n.x, y: n.y });
+        vSnake.pop();
+        const localObs = new Set(vSnake.slice(0, -1).map(key));
+        const detourPath = bfs(n, food, localObs);
+        if (detourPath && detourPath.length >= 2 && isPathSafeLenient(detourPath, vSnake)) {
+          return d;
+        }
       }
     }
   }
@@ -157,9 +188,9 @@ function runOneGame() {
     dir = aiDecide(snake, food, aiStepsNoFood);
     const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
 
-    if (!inside(head)) return { result: 'wall', eaten, score, length: snake.length };
+    if (!inside(head)) return { result: 'wall', eaten, score, length: snake.length, steps: step };
     const body = snake.slice(0, -1);
-    if (body.some(s => eq(s, head))) return { result: 'self', eaten, score, length: snake.length };
+    if (body.some(s => eq(s, head))) return { result: 'self', eaten, score, length: snake.length, steps: step };
 
     snake.unshift(head);
 
@@ -173,7 +204,7 @@ function runOneGame() {
       aiStepsNoFood++;
     }
   }
-  return { result: food ? 'timeout' : 'win', eaten, score, length: snake.length };
+  return { result: food ? 'timeout' : 'win', eaten, score, length: snake.length, steps: maxSteps };
 }
 
 // ====== 批量测试 ======
@@ -181,8 +212,8 @@ const TOTAL_RUNS = 150;
 const results = [];
 let wallDeaths = 0, selfDeaths = 0, wins = 0, timeouts = 0;
 let totalLength = 0, maxLength = 0, minLength = Infinity;
+let totalSteps = 0, totalEaten = 0;
 const eatenDist = {};
-const starveTriggers = [];
 
 console.log(`开始运行 ${TOTAL_RUNS} 局 AI 模拟测试...\n`);
 
@@ -196,6 +227,8 @@ for (let i = 0; i < TOTAL_RUNS; i++) {
   else timeouts++;
 
   totalLength += r.length;
+  totalSteps += r.steps;
+  totalEaten += r.eaten;
   if (r.length > maxLength) maxLength = r.length;
   if (r.length < minLength) minLength = r.length;
 
@@ -215,7 +248,8 @@ console.log(`  - 通关/超时: ${wins + timeouts}`);
 console.log(`平均蛇长: ${(totalLength / TOTAL_RUNS).toFixed(1)}`);
 console.log(`最大蛇长: ${maxLength}`);
 console.log(`最小蛇长: ${minLength}`);
-console.log(`平均吃食物: ${(results.reduce((s, r) => s + r.eaten, 0) / TOTAL_RUNS).toFixed(1)}`);
+console.log(`平均吃食物: ${(totalEaten / TOTAL_RUNS).toFixed(1)}`);
+console.log(`平均每食物步数: ${totalEaten > 0 ? (totalSteps / totalEaten).toFixed(1) : 'N/A'}`);
 
 console.log(`\n吃食物数量分布:`);
 const sortedBuckets = Object.keys(eatenDist).map(Number).sort((a, b) => a - b);

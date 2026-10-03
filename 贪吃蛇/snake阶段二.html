@@ -434,34 +434,70 @@ function isPathSafeLenient(path) {
 /* ---------- A4. AI 决策主函数 ---------- */
 // 策略优先级：
 //   1. 最短路径去食物 + 严格安全检查 → 安全就吃
-//   2. 饥饿模式 → 用宽松检查去食物（打破死锁，但不盲目自杀）
-//   3. 追尾巴保命
-//   4. 任意安全方向兜底
+//   2. 最短路径不安全 → 尝试绕路：换个相邻格子再 BFS 到食物
+//   3. 饥饿模式 → 用宽松检查去食物（打破死锁，但不盲目自杀）
+//   4. 追尾巴保命
+//   5. 任意安全方向兜底
 function aiDecide() {
   if (!alive || snake.length === 0) return;
 
-  // —— 策略 1 & 2：去食物 ——
   const bodySet = new Set(snake.slice(0, -1).map(key));
   const pathToFood = bfs(snake[0], food, bodySet);
 
   if (pathToFood && pathToFood.length >= 2) {
+    // 正常模式：严格检查
+    if (aiStepsNoFood < AI_STARVE_LIMIT) {
+      if (isPathSafe(pathToFood)) {
+        nextDir = getDirection(snake[0], pathToFood[1]);
+        return;
+      }
+
+      // —— 策略 2：绕路找更好角度 ——
+      // 模拟蛇先走到邻居 n，然后从 n 出发验证去食物的路径是否安全
+      const DIRS4 = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+      for (const d of DIRS4) {
+        const n = { x: snake[0].x + d.x, y: snake[0].y + d.y };
+        if (!inside(n) || bodySet.has(key(n))) continue;
+        // 模拟蛇先走到邻居 n（尾巴缩短）
+        let vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+        vSnake.unshift({ x: n.x, y: n.y });
+        vSnake.pop(); // 尾巴弹出
+        // 从邻居出发 BFS 到食物
+        const localObs = new Set(vSnake.slice(0, -1).map(key));
+        const detourPath = bfs(n, food, localObs);
+        if (detourPath && detourPath.length >= 2 && isPathSafe(detourPath)) {
+          nextDir = d;
+          return;
+        }
+      }
+    }
+
     // 饥饿模式：用宽松检查
     if (aiStepsNoFood >= AI_STARVE_LIMIT) {
       if (isPathSafeLenient(pathToFood)) {
         nextDir = getDirection(snake[0], pathToFood[1]);
         return;
       }
-      // 宽松也通不过 → 放弃吃这个食物，继续追尾（等食物刷新或局面变化）
-    } else {
-      // 正常模式：用严格检查
-      if (isPathSafe(pathToFood)) {
-        nextDir = getDirection(snake[0], pathToFood[1]);
-        return;
+      // 饥饿模式也试试绕路
+      const DIRS4 = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
+      for (const d of DIRS4) {
+        const n = { x: snake[0].x + d.x, y: snake[0].y + d.y };
+        if (!inside(n) || bodySet.has(key(n))) continue;
+        let vSnake = snake.map(s => ({ x: s.x, y: s.y }));
+        vSnake.unshift({ x: n.x, y: n.y });
+        vSnake.pop();
+        const localObs = new Set(vSnake.slice(0, -1).map(key));
+        const detourPath = bfs(n, food, localObs);
+        if (detourPath && detourPath.length >= 2 && isPathSafeLenient(detourPath)) {
+          nextDir = d;
+          return;
+        }
       }
+      // 宽松+绕路都过不去 → 放弃，追尾
     }
   }
 
-  // —— 策略 3：追尾巴保命 ——
+  // —— 策略 4：追尾巴保命 ——
   const tail = snake[snake.length - 1];
   const allBody = new Set(snake.map(key));
   allBody.delete(key(tail));
@@ -472,7 +508,7 @@ function aiDecide() {
     return;
   }
 
-  // —— 策略 4：任意安全方向兜底 ——
+  // —— 策略 5：任意安全方向兜底 ——
   const DIRS = [{ x:1,y:0 }, { x:-1,y:0 }, { x:0,y:1 }, { x:0,y:-1 }];
   const bodyObstacles = new Set(snake.slice(0, -1).map(key));
   for (const d of DIRS) {
